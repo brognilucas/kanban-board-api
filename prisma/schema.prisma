@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Change based on your database
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id               String    @id @default(uuid())
+  name             String
+  stages           Stage[]   @relation("ProjectStages")
+}
+
+model Case {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  stage_id    String
+  stage       Stage   @relation(fields: [stage_id], references: [id])
+  order       Int
+  tasks       Task[]
+}
+
+model Stage {
+  id         String  @id @default(uuid())
+  project_id String
+  project    Project @relation("ProjectStages", fields: [project_id], references: [id])  
+  name       String
+  sequence   Int
+  cases      Case[]
+}
+
+model Task {
+  id      String @id @default(uuid())
+  case_id String
+  case    Case   @relation(fields: [case_id], references: [id])
+  status  TaskStatus
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+}

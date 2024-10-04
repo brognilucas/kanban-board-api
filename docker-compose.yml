@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: project_management
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+  db-migrate:
+    image: node:18
+    container_name: db-migrate
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/project_management
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  project-service:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/project_management
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    command: npm run dev
+
+volumes:
+  postgres_data:
